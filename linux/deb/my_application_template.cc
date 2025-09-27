@@ -56,11 +56,11 @@ static void my_application_activate(GApplication* application) {
   if (use_header_bar) {
     GtkHeaderBar* header_bar = GTK_HEADER_BAR(gtk_header_bar_new());
     gtk_widget_show(GTK_WIDGET(header_bar));
-    gtk_header_bar_set_title(header_bar, "ffv");
+    gtk_header_bar_set_title(header_bar, "{{APP_EXECUTABLE_NAME}}");
     gtk_header_bar_set_show_close_button(header_bar, TRUE);
     gtk_window_set_titlebar(window, GTK_WIDGET(header_bar));
   } else {
-    gtk_window_set_title(window, "ffv");
+    gtk_window_set_title(window, "{{APP_EXECUTABLE_NAME}}");
   }
 
   gtk_window_set_default_size(window, 1280, 720);
@@ -74,9 +74,9 @@ static void my_application_activate(GApplication* application) {
   std::string appDir = exeDir + "/.."; // Go up one level to the root directory
   
   // Construct absolute paths
-  std::string aotPath = appDir + "/lib/libapp.so";
-  std::string assetsPath = appDir + "/data/flutter_assets";
-  std::string icuPath = appDir + "/data/icudtl.dat";
+  std::string aotPath = appDir + "/lib/{{APP_EXECUTABLE_NAME}}/libapp.so";
+  std::string assetsPath = appDir + "/data/{{APP_EXECUTABLE_NAME}}/flutter_assets";
+  std::string icuPath = appDir + "/data/{{APP_EXECUTABLE_NAME}}/icudtl.dat";
   
   fl_dart_project_set_aot_library_path(project, const_cast<char*>(aotPath.c_str()));
   fl_dart_project_set_assets_path(project, const_cast<char*>(assetsPath.c_str()));
@@ -157,3 +157,4 @@ MyApplication* my_application_new() {
                                      "flags", G_APPLICATION_NON_UNIQUE,
                                      nullptr));
 }
+
