@@ -1,84 +1,51 @@
-﻿; NSIS 安装程序脚本 - 多语言版本
-; 用于 Flutter 应用程序
+﻿; NSIS Installer Script - Multi-language Version
+; For Flutter Applications
 
-; 严格错误检查
+; Enable strict error checking
 !pragma warning error all
 
 Unicode True
 ManifestDPIAware true
 ManifestDPIAwareness PerMonitorV2
 
-; 包含必要的库
+; Include required libraries
 !include "MUI2.nsh"
 !include "FileFunc.nsh"
 !include "WordFunc.nsh"
 !include "LogicLib.nsh"
+!include "nsProcess.nsh"
 
-; 应用程序信息定义
-!define EXECUTABLE_NAME "{{EXECUTABLE_NAME}}"
+; ============================================
+; Application information definitions
+; ============================================
+!define APP_NAME "{{APP_NAME}}"
 !define APP_VERSION "{{APP_VERSION}}"
 !define APP_URL "{{APP_URL}}"
-!define APP_EXE "{{APP_EXE}}"
-!define OUTPUT_DIR "{{OUTPUT_DIR}}"
-!define FLUTTER_BUILT_DIR "{{FLUTTER_BUILT_DIR}}"
+!define APP_EXECUTABLE "{{APP_EXECUTABLE}}"
+!define APP_ICON "{{APP_ICON_PATH}}"
+!define BUILD_OUTPUT_DIR "{{BUILD_OUTPUT_DIR}}" ; e.g., build\windows\x64\runner\Release
+!define INSTALLER_OUTPUT_PATH "{{INSTALLER_OUTPUT_PATH}}" ; e.g., dist\MyApp-0.1.0-x64-setup.exe
 
 ; ============================================
-; 多语言宏配置，通过项目的配置文件生成
-; 如 !insertmacro MUI_LANGUAGE "SimpChinese"
-; ============================================
-{{LANGUAGE_MACROS}}
-
-; ============================================
-; 多语言应用信息定义，通过项目的配置文件生成
-; 这里定义的变量包括：
-;    - 应用显示名称(APP_DISPLAY_NAME)
-;    - 公司名称(APP_PUBLISHER)
-; 如 LangString APP_DISPLAY_NAME ${LANG_SIMPCHINESE} "果果视频"
-; ============================================
-{{LANGUAGE_VERSION_INFO}}
-
-; ============================================
-; 多语言字符串导入
-; 如 !include languages/English.nsh
-; ============================================
-{{LANGUAGE_INCLUDE}}
-
-; 安装程序信息
-Name "$(APP_DISPLAY_NAME) v${APP_VERSION}"
-OutFile "${OUTPUT_DIR}\{{SETUP_FILENAME}}"
-
-; 默认安装目录
-InstallDir "$LOCALAPPDATA\${EXECUTABLE_NAME}"
-InstallDirRegKey HKCU "Software\${EXECUTABLE_NAME}" "InstallDir"
-
-; 请求用户权限
-RequestExecutionLevel user
-
-; ============================================
-; 界面设置
+; Interface Settings
 ; ============================================
 !define MUI_ABORTWARNING
-!define MUI_ICON "{{MUI_ICON}}"
-!define MUI_UNICON "${NSISDIR}\Contrib\Graphics\Icons\modern-uninstall.ico"
+!define MUI_ICON "${APP_ICON}"
 
-; 显示所有语言，不受用户代码页限制
+; Display all languages regardless of user code page
 !define MUI_LANGDLL_ALLLANGUAGES
 
-; 记住安装程序语言选择
-!define MUI_LANGDLL_REGISTRY_ROOT "HKCU"
-!define MUI_LANGDLL_REGISTRY_KEY "Software\${EXECUTABLE_NAME}"
-!define MUI_LANGDLL_REGISTRY_VALUENAME "Installer Language"
-
 ; ============================================
-; 安装程序页面
+; Installer Pages
 ; ============================================
 !insertmacro MUI_PAGE_WELCOME
+!insertmacro MUI_PAGE_COMPONENTS
 !insertmacro MUI_PAGE_DIRECTORY
 !insertmacro MUI_PAGE_INSTFILES
 !insertmacro MUI_PAGE_FINISH
 
 ; ============================================
-; 卸载程序页面
+; Uninstaller Pages
 ; ============================================
 !insertmacro MUI_UNPAGE_WELCOME
 !insertmacro MUI_UNPAGE_CONFIRM
@@ -86,78 +53,117 @@ RequestExecutionLevel user
 !insertmacro MUI_UNPAGE_FINISH
 
 ; ============================================
-; 保留文件（固实压缩优化）
+; Reserve Files (for solid compression optimization)
 ; ============================================
 !insertmacro MUI_RESERVEFILE_LANGDLL
 
 ; ============================================
-; 应用程序信息，通过项目的配置文件生成
-; 如 VIAddVersionKey /LANG=${LANG_SIMPCHINESE} "ProductName" "果果视频"
-; ===========================================
+; Remember installer language selection
+; ============================================
+!define MUI_LANGDLL_REGISTRY_ROOT "HKCU"
+!define MUI_LANGDLL_REGISTRY_KEY "Software\${APP_NAME}"
+!define MUI_LANGDLL_REGISTRY_VALUENAME "Installer Language"
+
+; ============================================
+; Multi-language macro configuration (generated from project config)
+; Example: !insertmacro MUI_LANGUAGE "SimpChinese"
+; ============================================
+{{LANGUAGE_MACROS}}
+
+; ============================================
+; Multi-language application info definitions (generated from project config)
+; Defines variables such as:
+;    - Application display name (APP_DISPLAY_NAME)
+;    - Publisher name (APP_PUBLISHER)
+; Example: LangString APP_DISPLAY_NAME ${LANG_ENGLISH} "MyApp"
+; ============================================
+{{LANGUAGE_STRINGS}}
+
+; ============================================
+; Multi-language string includes
+; Example: !include "${NSISDIR}\languages\English.nsh"
+; ============================================
+{{LANGUAGE_INCLUDE}}
+
+; ============================================
+; Installer metadata
+; ============================================
+Name "$(APP_DISPLAY_NAME) v${APP_VERSION}"
+OutFile "${INSTALLER_OUTPUT_PATH}"
+
+; Default installation directory
+InstallDir "$LOCALAPPDATA\${APP_NAME}"
+InstallDirRegKey HKCU "Software\${APP_NAME}" "InstallDir"
+
+; Request user-level execution (no admin required)
+RequestExecutionLevel user
+
+; ============================================
+; Version information (generated from project config)
+; Example: VIAddVersionKey /LANG=${LANG_ENGLISH} "ProductName" "MyApp"
+; ============================================
 {{VERSION_INFO}}
 
 ; ============================================
-; 安装部分
+; Installation Sections
 ; ============================================
 Section "$(SECTION_MAIN)" SecMain
     SectionIn RO
     
     SetOutPath "$INSTDIR"
     
-    ; 复制应用程序文件
-    File /r "${FLUTTER_BUILT_DIR}\*"
+    ; Copy application files
+    File /r "${BUILD_OUTPUT_DIR}\*"
     
-    ; 创建卸载程序
+    ; Create uninstaller
     WriteUninstaller "$INSTDIR\Uninstall.exe"
     
-    ; 写入注册表信息
-    WriteRegStr HKCU "Software\${EXECUTABLE_NAME}" "InstallDir" "$INSTDIR"
-    WriteRegStr HKCU "Software\${EXECUTABLE_NAME}" "Version" "${APP_VERSION}"
+    ; Write registry entries
+    WriteRegStr HKCU "Software\${APP_NAME}" "InstallDir" "$INSTDIR"
+    WriteRegStr HKCU "Software\${APP_NAME}" "Version" "${APP_VERSION}"
     
-    ; 添加到程序和功能
-    WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\${EXECUTABLE_NAME}" "DisplayName" "$(APP_DISPLAY_NAME)"
-    WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\${EXECUTABLE_NAME}" "DisplayVersion" "${APP_VERSION}"
-    WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\${EXECUTABLE_NAME}" "Publisher" "$(APP_PUBLISHER)"
-    WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\${EXECUTABLE_NAME}" "URLInfoAbout" "${APP_URL}"
-    WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\${EXECUTABLE_NAME}" "DisplayIcon" "$INSTDIR\${APP_EXE}"
-    WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\${EXECUTABLE_NAME}" "UninstallString" "$INSTDIR\Uninstall.exe"
-    WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\${EXECUTABLE_NAME}" "QuietUninstallString" "$INSTDIR\Uninstall.exe /S"
-    WriteRegDWORD HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\${EXECUTABLE_NAME}" "NoModify" 1
-    WriteRegDWORD HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\${EXECUTABLE_NAME}" "NoRepair" 1
+    ; Add to "Apps & Features" (Programs and Features)
+    WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APP_NAME}" "DisplayName" "$(APP_DISPLAY_NAME)"
+    WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APP_NAME}" "DisplayVersion" "${APP_VERSION}"
+    WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APP_NAME}" "Publisher" "$(APP_PUBLISHER)"
+    WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APP_NAME}" "URLInfoAbout" "${APP_URL}"
+    WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APP_NAME}" "DisplayIcon" "$INSTDIR\${APP_EXECUTABLE}"
+    WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APP_NAME}" "UninstallString" "$INSTDIR\Uninstall.exe"
+    WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APP_NAME}" "QuietUninstallString" "$INSTDIR\Uninstall.exe /S"
+    WriteRegDWORD HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APP_NAME}" "NoModify" 1
+    WriteRegDWORD HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APP_NAME}" "NoRepair" 1
     
-    ; 获取安装大小
+    ; Calculate and write estimated installation size
     ${GetSize} "$INSTDIR" "/S=0K" $0 $1 $2
     IntFmt $0 "0x%08X" $0
-    WriteRegDWORD HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\${EXECUTABLE_NAME}" "EstimatedSize" "$0"
+    WriteRegDWORD HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APP_NAME}" "EstimatedSize" "$0"
 SectionEnd
 
 Section "$(SECTION_DESKTOP)" SecDesktop
-    CreateShortcut "$DESKTOP\$(APP_DISPLAY_NAME).lnk" "$INSTDIR\${APP_EXE}" "" "$INSTDIR\${APP_EXE}" 0
+    CreateShortcut "$DESKTOP\$(APP_DISPLAY_NAME).lnk" "$INSTDIR\${APP_EXECUTABLE}" "" "$INSTDIR\${APP_EXECUTABLE}" 0
 SectionEnd
 
 Section "$(SECTION_STARTMENU)" SecStartMenu
-    CreateDirectory "$SMPROGRAMS\${EXECUTABLE_NAME}"
-    CreateShortcut "$SMPROGRAMS\${EXECUTABLE_NAME}\$(APP_DISPLAY_NAME).lnk" "$INSTDIR\${APP_EXE}" "" "$INSTDIR\${APP_EXE}" 0
-    CreateShortcut "$SMPROGRAMS\${EXECUTABLE_NAME}\$(SHORTCUT_UNINSTALL).lnk" "$INSTDIR\Uninstall.exe" "" "$INSTDIR\Uninstall.exe" 0
+    CreateDirectory "$SMPROGRAMS\${APP_NAME}"
+    CreateShortcut "$SMPROGRAMS\${APP_NAME}\$(APP_DISPLAY_NAME).lnk" "$INSTDIR\${APP_EXECUTABLE}" "" "$INSTDIR\${APP_EXECUTABLE}" 0
+    CreateShortcut "$SMPROGRAMS\${APP_NAME}\$(SHORTCUT_UNINSTALL).lnk" "$INSTDIR\Uninstall.exe" "" "$INSTDIR\Uninstall.exe" 0
 SectionEnd
 
 ; ============================================
-; 安装程序函数
+; Installer Functions
 ; ============================================
 Function .onInit
-    ; 显示语言选择对话框
+    ; Display language selection dialog
     !insertmacro MUI_LANGDLL_DISPLAY
 
-    ; 检查应用是否正在运行
-    nsExec::ExecToStack 'tasklist /FI "IMAGENAME eq ${APP_EXE}" /NH'
-    Pop $0
-    Pop $1
-    ${If} $1 != "INFO: No tasks are running which match the specified criteria."
-        MessageBox MB_OKCANCEL|MB_ICONEXCLAMATION "$(MSG_APP_RUNNING)" IDOK +2
+    ; Check if the application is currently running
+    ${nsProcess::FindProcess} "${APP_EXECUTABLE}" $R0
+    ${If} $R0 == 0  ; 0 means process was found
+        MessageBox MB_OK|MB_ICONEXCLAMATION "$(MSG_APP_RUNNING)"
         Abort
     ${EndIf}
-    
-    ; 检查磁盘空间（至少需要 500MB）
+
+    ; Check available disk space (minimum 500 MB required)
     ${GetRoot} "$INSTDIR" $0
     ${DriveSpace} "$0\" "/D=F /S=M" $1
     ${If} $1 < 500
@@ -167,7 +173,7 @@ Function .onInit
 FunctionEnd
 
 ; ============================================
-; 组件描述
+; Section Descriptions
 ; ============================================
 !insertmacro MUI_FUNCTION_DESCRIPTION_BEGIN
     !insertmacro MUI_DESCRIPTION_TEXT ${SecMain} $(DESC_MAIN)
@@ -175,62 +181,61 @@ FunctionEnd
     !insertmacro MUI_DESCRIPTION_TEXT ${SecStartMenu} $(DESC_STARTMENU)
 !insertmacro MUI_FUNCTION_DESCRIPTION_END
 
-; 安装完成后的函数
+; Function called after successful installation
 Function .onInstSuccess
     MessageBox MB_YESNO "$(MSG_INSTALL_COMPLETE)" IDYES Launch
     Goto NoLaunch
     Launch:
-        Exec '"$INSTDIR\${APP_EXE}"'
+        Exec '"$INSTDIR\${APP_EXECUTABLE}"'
     NoLaunch:
 FunctionEnd
 
 ; ============================================
-; 卸载部分
+; Uninstallation Section
 ; ============================================
 Section "Uninstall"
-    ; 检查应用是否正在运行
-    nsExec::ExecToStack 'tasklist /FI "IMAGENAME eq ${APP_EXE}" /NH'
-    Pop $0
-    Pop $1
-    ${If} $1 != "INFO: No tasks are running which match the specified criteria."
+    ; Check if the application is currently running
+    ${nsProcess::FindProcess} "${APP_EXECUTABLE}" $R0
+    ${If} $R0 == 0  ; 0 means process was found
         MessageBox MB_OK|MB_ICONEXCLAMATION "$(MSG_APP_RUNNING_UNINSTALL)"
         Abort
     ${EndIf}
     
-    ; 删除整个安装目录及其内容
+    ; Remove entire installation directory and contents
     RMDir /r "$INSTDIR"
     
-    ; 删除快捷方式（添加错误检查）
+    ; Remove desktop shortcut
     ${If} ${FileExists} "$DESKTOP\$(APP_DISPLAY_NAME).lnk"
         Delete "$DESKTOP\$(APP_DISPLAY_NAME).lnk"
     ${EndIf}
     
-    ${If} ${FileExists} "$SMPROGRAMS\${EXECUTABLE_NAME}\$(APP_DISPLAY_NAME).lnk"
-        Delete "$SMPROGRAMS\${EXECUTABLE_NAME}\$(APP_DISPLAY_NAME).lnk"
+    ; Remove Start Menu shortcuts
+    ${If} ${FileExists} "$SMPROGRAMS\${APP_NAME}\$(APP_DISPLAY_NAME).lnk"
+        Delete "$SMPROGRAMS\${APP_NAME}\$(APP_DISPLAY_NAME).lnk"
     ${EndIf}
     
-    ${If} ${FileExists} "$SMPROGRAMS\${EXECUTABLE_NAME}\$(SHORTCUT_UNINSTALL).lnk"
-        Delete "$SMPROGRAMS\${EXECUTABLE_NAME}\$(SHORTCUT_UNINSTALL).lnk"
+    ${If} ${FileExists} "$SMPROGRAMS\${APP_NAME}\$(SHORTCUT_UNINSTALL).lnk"
+        Delete "$SMPROGRAMS\${APP_NAME}\$(SHORTCUT_UNINSTALL).lnk"
     ${EndIf}
     
-    RMDir "$SMPROGRAMS\${EXECUTABLE_NAME}"
+    RMDir "$SMPROGRAMS\${APP_NAME}"
     
-    ; 删除注册表项
-    DeleteRegKey HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\${EXECUTABLE_NAME}"
-    DeleteRegKey /ifempty HKCU "Software\${EXECUTABLE_NAME}"
+    ; Remove registry entries
+    DeleteRegKey HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APP_NAME}"
+    DeleteRegKey /ifempty HKCU "Software\${APP_NAME}"
     
-    ; 显示完成消息
+    ; Show uninstall completion message
     MessageBox MB_OK "$(MSG_UNINSTALL_COMPLETE)"
 SectionEnd
 
 ; ============================================
-; 卸载程序函数
+; Uninstaller Functions
 ; ============================================
 Function un.onInit
-    ; 获取安装时选择的语言
+    ; Restore language selected during installation
     !insertmacro MUI_UNGETLANGUAGE
     
-    ; 卸载前确认（这是正确的位置）
+    ; Confirm uninstallation
     MessageBox MB_YESNO|MB_ICONQUESTION "$(MSG_UNINSTALL_CONFIRM)" IDYES +2
     Abort
 FunctionEnd
