@@ -74,9 +74,11 @@ static void my_application_activate(GApplication* application) {
   std::string appDir = exeDir + "/.."; // Go up one level to the root directory
   
   // Construct absolute paths
-  std::string aotPath = appDir + "/lib/{{APP_EXECUTABLE_NAME}}/libapp.so";
-  std::string assetsPath = appDir + "/data/{{APP_EXECUTABLE_NAME}}/flutter_assets";
-  std::string icuPath = appDir + "/data/{{APP_EXECUTABLE_NAME}}/icudtl.dat";
+  // The directory names are substituted by the packaging tool so that they
+  // always match the installed layout.
+  std::string aotPath = appDir + "/{{APP_LIB_DIR}}/libapp.so";
+  std::string assetsPath = appDir + "/{{APP_DATA_DIR}}/flutter_assets";
+  std::string icuPath = appDir + "/{{APP_DATA_DIR}}/icudtl.dat";
   
   fl_dart_project_set_aot_library_path(project, const_cast<char*>(aotPath.c_str()));
   fl_dart_project_set_assets_path(project, const_cast<char*>(assetsPath.c_str()));
