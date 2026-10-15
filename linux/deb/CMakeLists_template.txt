@@ -88,10 +88,12 @@ install(CODE "
   file(REMOVE_RECURSE \"${BUILD_BUNDLE_DIR}/\")
   " COMPONENT Runtime)
 
-# Relative to the bundle root; replaced by the packaging tool so that the
-# runner and the installed package agree on where things live.
-set(INSTALL_BUNDLE_LIB_DIR "${CMAKE_INSTALL_PREFIX}/{{APP_LIB_DIR}}")
-set(INSTALL_BUNDLE_DATA_DIR "${CMAKE_INSTALL_PREFIX}/{{APP_DATA_DIR}}")
+# The Flutter bundle layout, which the packaging tool consumes as its input.
+# These are deliberately not the APP_LIB_DIR/APP_DATA_DIR placeholders: those
+# describe where the *installed package* keeps its files, while this is where
+# `flutter build linux` writes them.
+set(INSTALL_BUNDLE_DATA_DIR "${CMAKE_INSTALL_PREFIX}/data")
+set(INSTALL_BUNDLE_LIB_DIR "${CMAKE_INSTALL_PREFIX}/lib")
 
 install(TARGETS ${BINARY_NAME} RUNTIME DESTINATION "${CMAKE_INSTALL_PREFIX}"
   COMPONENT Runtime)
